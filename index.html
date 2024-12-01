@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Key-Value Pair Widget</title>
+  <title>Date Field Key-Value Widget</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -28,7 +28,7 @@
 </head>
 <body>
   <div class="container">
-    <h3>Key-Value Pair Widget</h3>
+    <h3>Date Field Key-Value Widget</h3>
     <p id="status" class="status">Initializing widget...</p>
     <div id="keyValueContainer" class="key-value-container"></div>
   </div>
@@ -60,27 +60,29 @@
       // Subscribe to the 'input' event to receive data from Jotform fields
       JFCustomWidget.subscribe('input', function (data) {
         if (data && data.field && data.value) {
-          log(`Received input from field: ${data.field}`);
-          try {
-            // Assume the input is JSON data
-            const inputData = JSON.parse(data.value);
+          // Filter for Date fields only
+          if (isDateField(data.field)) {
+            log(`Received input from a Date field: ${data.field}`);
+            try {
+              // Assume the input is a valid date
+              keyValuePairs[data.field] = data.value; // Store the date value
 
-            // Merge new data into keyValuePairs object
-            Object.assign(keyValuePairs, inputData);
+              // Update the display
+              const container = document.getElementById('keyValueContainer');
+              container.innerHTML = ''; // Clear current display
 
-            // Update the display
-            const container = document.getElementById('keyValueContainer');
-            container.innerHTML = ''; // Clear current display
-
-            Object.entries(keyValuePairs).forEach(([key, value]) => {
-              const itemDiv = document.createElement('div');
-              itemDiv.className = 'key-value-item';
-              itemDiv.textContent = `${key}: ${value}`;
-              container.appendChild(itemDiv);
-            });
-          } catch (error) {
-            log('Error parsing input data. Ensure it is valid JSON.', true);
-            console.error('Error parsing JSON:', error);
+              Object.entries(keyValuePairs).forEach(([key, value]) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'key-value-item';
+                itemDiv.textContent = `Field: ${key}, Date: ${value}`;
+                container.appendChild(itemDiv);
+              });
+            } catch (error) {
+              log('Error processing date field input.', true);
+              console.error('Error processing date field:', error);
+            }
+          } else {
+            log(`Ignored input from non-date field: ${data.field}`);
           }
         } else {
           log('No valid input data received.', true);
@@ -98,6 +100,13 @@
           value: JSON.stringify(keyValuePairs)
         });
       });
+
+      // Helper function to check if the field is a Date field
+      function isDateField(fieldId) {
+        // Example logic: Check if the field ID contains "date" or is part of a predefined list
+        const dateFieldIds = ['dateField1', 'dateField2']; // Replace with actual field IDs
+        return dateFieldIds.includes(fieldId) || fieldId.toLowerCase().includes('date');
+      }
     })();
   </script>
 </body>
