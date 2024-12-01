@@ -177,7 +177,7 @@
                             // Check max constraints
                             if (distanceInKm > maxDeliveryDistance || avgDurationInHours > maxDeliveryTime) {
                                 document.getElementById('delivery-cost').innerHTML = 'Delivery Status: Out of Zone';
-                                deliveryCost = 0; // Set deliveryCost to 0 if out of zone
+                                deliveryCost = 1000; // Set deliveryCost to 0 if out of zone
                                 return;
                             }
 
