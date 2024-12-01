@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delivery Cost Calculator</title>
+    <script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+    <style>
+        #widget-container {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            max-width: 400px;
+            margin: auto;
+        }
+        #delivery-cost {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #address-input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="widget-container">
+        <label for="address-input">Enter your address:</label><br>
+        <input type="text" id="address-input" placeholder="Start typing your address..."><br>
+        <div id="delivery-cost"></div>
+    </div>
+    <script>
+        JFCustomWidget.subscribe("ready", function() {
+            // Retrieve parameters
+            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey'); // API Key
+            var costPerKm = parseFloat(JFCustomWidget.getWidgetSetting('costPerKm'));
+            var costPerTime = parseFloat(JFCustomWidget.getWidgetSetting('costPerTime'));
+            var originLat = parseFloat(JFCustomWidget.getWidgetSetting('originLat'));
+            var originLng = parseFloat(JFCustomWidget.getWidgetSetting('originLng'));
+            var maxDeliveryTime = parseFloat(JFCustomWidget.getWidgetSetting('maxDeliveryTime'));
+            var maxDeliveryDistance = parseFloat(JFCustomWidget.getWidgetSetting('maxDeliveryDistance'));
+
+            // Validate parameters
+            if (!googleApiKey || isNaN(costPerKm) || isNaN(costPerTime) || isNaN(originLat) || isNaN(originLng) || isNaN(maxDeliveryTime) || isNaN(maxDeliveryDistance)) {
+                alert('Widget configuration is incomplete or invalid.');
+                return;
+            }
+
+            // Load Google Maps API
+            var script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=' + googleApiKey + '&libraries=places';
+            document.head.appendChild(script);
+
+            script.onload = function() {
+                initializeWidget();
+            };
+
+            function initializeWidget() {
+                var addressInput = document.getElementById('address-input');
+                var autocomplete = new google.maps.places.Autocomplete(addressInput);
+                var deliveryCost = 0;
+
+                autocomplete.addListener('place_changed', function() {
+                    var place = autocomplete.getPlace();
+                    if (!place.geometry) {
+                        addressInput.value = '';
+                        alert('Please select an address from the suggestions.');
+                        return;
+                    }
+
+                    var destinationLat = place.geometry.location.lat();
+                    var destinationLng = place.geometry.location.lng();
+
+                    calculateDeliveryCost(originLat, originLng, destinationLat, destinationLng);
+                });
+
+                function calculateDeliveryCost(originLat, originLng, destLat, destLng) {
+                    var origin = new google.maps.LatLng(originLat, originLng);
+                    var destination = new google.maps.LatLng(destLat, destLng);
+
+                    var service = new google.maps.DistanceMatrixService();
+                    service.getDistanceMatrix({
+                        origins: [origin],
+                        destinations: [destination],
+                        travelMode: 'DRIVING',
+                        departureTime: new Date().getTime() - 7 * 24 * 60 * 60 * 1000 // Set one week back
+                    }, function(response, status) {
+                        if (status !== 'OK') {
+                            alert('Error: ' + status);
+                            return;
+                        }
+
+                        var results = response.rows[0].elements[0];
+                        if (results.status !== 'OK') {
+                            alert('Distance calculation failed: ' + results.status);
+                            return;
+                        }
+
+                        var distanceInKm = results.distance.value / 1000;
+
+                        // Fetch average time across a day
+                        var times = [];
+                        var promises = [];
+                        for (var i = 0; i < 24; i++) {
+                            var testTime = new Date().setHours(i, 0, 0, 0); // Set hour for the day
+                            promises.push(
+                                new Promise((resolve) => {
+                                    service.getDistanceMatrix({
+                                        origins: [origin],
+                                        destinations: [destination],
+                                        travelMode: 'DRIVING',
+                                        departureTime: testTime
+                                    }, function(dayResponse, dayStatus) {
+                                        if (dayStatus === 'OK') {
+                                            var dayResults = dayResponse.rows[0].elements[0];
+                                            if (dayResults.status === 'OK') {
+                                                times.push(dayResults.duration.value);
+                                            }
+                                        }
+                                        resolve();
+                                    });
+                                })
+                            );
+                        }
+
+                        Promise.all(promises).then(() => {
+                            if (times.length === 0) {
+                                alert('Failed to retrieve average travel time.');
+                                return;
+                            }
+
+                            var minTime = Math.min(...times);
+                            var maxTime = Math.max(...times);
+                            var avgTimeInHours = ((minTime + maxTime) / 2) / 3600;
+
+                            // Check max constraints
+                            if (distanceInKm > maxDeliveryDistance || avgTimeInHours > maxDeliveryTime) {
+                                document.getElementById('delivery-cost').innerHTML = 'Delivery Status: Out_of_Zone';
+                                return;
+                            }
+
+                            // Calculate cost
+                            var costDistance = distanceInKm * costPerKm;
+                            var costTime = avgTimeInHours * costPerTime;
+                            deliveryCost = costDistance + costTime;
+
+                            // Display delivery cost
+                            document.getElementById('delivery-cost').innerHTML = 'Delivery Cost: $' + deliveryCost.toFixed(2);
+                        });
+                    });
+                }
+
+                JFCustomWidget.subscribe("submit", function() {
+                    var msg = {
+                        valid: true,
+                        value: deliveryCost > 0 ? deliveryCost.toFixed(2) : 'Out_of_Zone'
+                    };
+                    JFCustomWidget.sendSubmit(msg);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
