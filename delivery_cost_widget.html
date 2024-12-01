@@ -84,7 +84,7 @@
 
                     var directionsService = new google.maps.DirectionsService();
 
-                    // Dates for Wednesday and Saturday at 5:30 PM
+                    // Dates for Wednesday and Saturday at 5:30 PM EST
                     var today = new Date(2024, 11, 1); // December 1, 2024 (months are 0-indexed)
                     var wednesday = new Date(today);
                     wednesday.setDate(today.getDate() + ((3 - today.getDay() + 7) % 7)); // 3 = Wednesday
