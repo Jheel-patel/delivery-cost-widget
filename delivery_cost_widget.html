@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delivery Cost Calculator</title>
+    <script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
+    <style>
+        #widget-container {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+        }
+        #delivery-cost {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #address-input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="widget-container">
+        <label for="address-input">Enter your address:</label><br>
+        <input type="text" id="address-input" placeholder="Start typing your address...">
+        <div id="delivery-cost"></div>
+    </div>
+    <script>
+        JFCustomWidget.subscribe("ready", function(){
+            // Get widget settings
+            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey');
+            var costPerKm = parseFloat(JFCustomWidget.getWidgetSetting('costPerKm'));
+            var costPerTime = parseFloat(JFCustomWidget.getWidgetSetting('costPerTime'));
+            var originLat = parseFloat(JFCustomWidget.getWidgetSetting('originLat'));
+            var originLng = parseFloat(JFCustomWidget.getWidgetSetting('originLng'));
+
+            // Validate settings
+            if (!googleApiKey || isNaN(costPerKm) || isNaN(costPerTime) || isNaN(originLat) || isNaN(originLng)) {
+                alert('Widget configuration is incomplete or invalid.');
+                return;
+            }
+
+            // Load Google Maps JavaScript API dynamically
+            var script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=' + googleApiKey + '&libraries=places';
+            document.head.appendChild(script);
+
+            script.onload = function() {
+                // Initialize the widget after Google Maps API is loaded
+                initializeWidget();
+            };
+
+            function initializeWidget() {
+                var addressInput = document.getElementById('address-input');
+                var autocomplete = new google.maps.places.Autocomplete(addressInput);
+
+                // Store the calculated delivery cost
+                var deliveryCost = 0;
+
+                autocomplete.addListener('place_changed', function() {
+                    var place = autocomplete.getPlace();
+                    if (!place.geometry) {
+                        // User did not select a prediction; reset the input field
+                        addressInput.value = '';
+                        alert('Please select an address from the suggestions.');
+                        return;
+                    }
+
+                    var destinationLat = place.geometry.location.lat();
+                    var destinationLng = place.geometry.location.lng();
+
+                    calculateDistanceAndCost(originLat, originLng, destinationLat, destinationLng);
+                });
+
+                function calculateDistanceAndCost(originLat, originLng, destLat, destLng) {
+                    var origin = new google.maps.LatLng(originLat, originLng);
+                    var destination = new google.maps.LatLng(destLat, destLng);
+
+                    var service = new google.maps.DistanceMatrixService();
+                    service.getDistanceMatrix({
+                        origins: [origin],
+                        destinations: [destination],
+                        travelMode: 'DRIVING',
+                    }, function(response, status) {
+                        if (status !== 'OK') {
+                            alert('Error: ' + status);
+                        } else {
+                            var results = response.rows[0].elements[0];
+                            if (results.status === 'OK') {
+                                var distanceInMeters = results.distance.value;
+                                var durationInSeconds = results.duration.value;
+
+                                var distanceInKm = distanceInMeters / 1000;
+                                var durationInHours = durationInSeconds / 3600;
+
+                                var costDistance = distanceInKm * costPerKm;
+                                var costTime = durationInHours * costPerTime;
+
+                                deliveryCost = costDistance + costTime;
+
+                                // Display the delivery cost
+                                document.getElementById('delivery-cost').innerHTML = 'Delivery Cost: $' + deliveryCost.toFixed(2);
+                            } else {
+                                alert('Distance request failed due to ' + results.status);
+                            }
+                        }
+                    });
+                }
+
+                // Subscribe to form submit event
+                JFCustomWidget.subscribe("submit", function(){
+                    var msg = {
+                        valid: true,
+                        value: deliveryCost.toFixed(2)
+                    };
+                    JFCustomWidget.sendSubmit(msg);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
