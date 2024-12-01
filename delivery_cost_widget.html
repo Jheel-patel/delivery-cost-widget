@@ -9,77 +9,93 @@
       font-family: Arial, sans-serif;
     }
     .container {
-      margin: 10px;
+      padding: 10px;
     }
-    .key-value-pair {
-      margin: 5px 0;
+    .status {
+      margin-bottom: 10px;
+      color: green;
     }
-    .key, .value {
-      display: inline-block;
-      margin-right: 10px;
+    .error {
+      color: red;
+    }
+    .key-value-container {
+      margin-top: 10px;
+    }
+    .key-value-item {
+      margin-bottom: 5px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h3>Key-Value Pair Widget</h3>
-    <p id="status">Waiting for input from source fields...</p>
-    <div id="keyValuePairs"></div>
+    <p id="status" class="status">Initializing widget...</p>
+    <div id="keyValueContainer" class="key-value-container"></div>
   </div>
 
   <script>
-    (function() {
-      // An object to hold key-value pairs
-      const keyValuePairs = {};
+    (function () {
+      let keyValuePairs = {};
 
-      // Listen for widget readiness
-      JFCustomWidget.subscribe("ready", function() {
-        document.getElementById('status').textContent = 'Widget ready. Listening for source field inputs...';
+      // Log function for debugging
+      const log = (message, isError = false) => {
+        const status = document.getElementById('status');
+        status.textContent = message;
+        status.className = isError ? 'status error' : 'status';
+      };
+
+      // Check if JFCustomWidget is defined
+      if (typeof JFCustomWidget === 'undefined') {
+        log('JFCustomWidget is not defined. Ensure the widget is running in Jotform.', true);
+        console.error('JFCustomWidget is not defined.');
+        return;
+      }
+
+      // Subscribe to the 'ready' event
+      JFCustomWidget.subscribe('ready', function () {
+        log('Widget is ready! Waiting for input from form fields...');
+        console.log('Widget is ready.');
       });
 
-      // Listen for input updates from source fields
-      JFCustomWidget.subscribe("input", function(data) {
-        const keyValueContainer = document.getElementById("keyValuePairs");
+      // Subscribe to the 'input' event to receive data from Jotform fields
+      JFCustomWidget.subscribe('input', function (data) {
+        if (data && data.field && data.value) {
+          log(`Received input from field: ${data.field}`);
+          try {
+            // Assume the input is JSON data
+            const inputData = JSON.parse(data.value);
 
-        // Clear existing key-value pairs in the widget display
-        keyValueContainer.innerHTML = '';
+            // Merge new data into keyValuePairs object
+            Object.assign(keyValuePairs, inputData);
 
-        // Assume data.value is in JSON format like {"key1": "value1", "key2": "value2"}
-        try {
-          const inputData = JSON.parse(data.value);
+            // Update the display
+            const container = document.getElementById('keyValueContainer');
+            container.innerHTML = ''; // Clear current display
 
-          // Update keyValuePairs object
-          Object.assign(keyValuePairs, inputData);
-
-          // Render key-value pairs in the widget
-          for (const [key, value] of Object.entries(keyValuePairs)) {
-            const pairDiv = document.createElement("div");
-            pairDiv.className = "key-value-pair";
-
-            const keyDiv = document.createElement("span");
-            keyDiv.className = "key";
-            keyDiv.textContent = `Key: ${key}`;
-
-            const valueDiv = document.createElement("span");
-            valueDiv.className = "value";
-            valueDiv.textContent = `Value: ${value}`;
-
-            pairDiv.appendChild(keyDiv);
-            pairDiv.appendChild(valueDiv);
-            keyValueContainer.appendChild(pairDiv);
+            Object.entries(keyValuePairs).forEach(([key, value]) => {
+              const itemDiv = document.createElement('div');
+              itemDiv.className = 'key-value-item';
+              itemDiv.textContent = `${key}: ${value}`;
+              container.appendChild(itemDiv);
+            });
+          } catch (error) {
+            log('Error parsing input data. Ensure it is valid JSON.', true);
+            console.error('Error parsing JSON:', error);
           }
-
-          document.getElementById('status').textContent = 'Key-value pairs updated.';
-        } catch (error) {
-          document.getElementById('status').textContent = 'Invalid data received. Ensure JSON format.';
+        } else {
+          log('No valid input data received.', true);
         }
       });
 
-      // Send data back to the form when submitting
-      JFCustomWidget.subscribe("submit", function() {
+      // Subscribe to the 'submit' event
+      JFCustomWidget.subscribe('submit', function () {
+        log('Submitting widget data...');
+        console.log('Submitting data:', keyValuePairs);
+
+        // Send the key-value pairs back to the form
         JFCustomWidget.sendSubmit({
           valid: true,
-          value: JSON.stringify(keyValuePairs),
+          value: JSON.stringify(keyValuePairs)
         });
       });
     })();
