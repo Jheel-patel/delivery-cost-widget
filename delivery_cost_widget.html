@@ -34,28 +34,18 @@
     <script>
         // Wait for the widget to be ready
         JFCustomWidget.subscribe("ready", function() {
-            // Retrieve the API key securely
-            var googleApiKey = JFCustomWidget.getAPIKey(); 
+            // Retrieve the API key from widget settings
+            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey');
 
-            // Retrieve widget settings
-            var costPerKmStr = JFCustomWidget.getWidgetSetting('costPerKm');
-            var costPerTimeStr = JFCustomWidget.getWidgetSetting('costPerTime');
-            var originLatStr = JFCustomWidget.getWidgetSetting('originLat');
-            var originLngStr = JFCustomWidget.getWidgetSetting('originLng');
+            // Hardcoded parameters
+            var costPerKm = 0.2; // Cost per kilometer
+            var costPerTime = 10; // Cost per hour
+            var originLat = 43.67571613019142; // Origin latitude
+            var originLng = -79.50057429622511; // Origin longitude
 
-            // Parse settings into numbers
-            var costPerKm = parseFloat(costPerKmStr);
-            var costPerTime = parseFloat(costPerTimeStr);
-            var originLat = parseFloat(originLatStr);
-            var originLng = parseFloat(originLngStr);
-
-            // Validate settings
+            // Validate the API key
             if (!googleApiKey) {
                 alert('Google Maps API Key is missing.');
-                return;
-            }
-            if (isNaN(costPerKm) || isNaN(costPerTime) || isNaN(originLat) || isNaN(originLng)) {
-                alert('Widget configuration is incomplete or invalid.');
                 return;
             }
 
