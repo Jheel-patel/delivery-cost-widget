@@ -43,7 +43,9 @@
             var maxDeliveryDistance = parseFloat(JFCustomWidget.getWidgetSetting('maxDeliveryDistance'));
 
             // Validate parameters
-            if (!googleApiKey || isNaN(costPerKm) || isNaN(costPerTime) || isNaN(originLat) || isNaN(originLng) || isNaN(maxDeliveryTime) || isNaN(maxDeliveryDistance)) {
+            if (!googleApiKey || isNaN(costPerKm) || isNaN(costPerTime) ||
+                isNaN(originLat) || isNaN(originLng) ||
+                isNaN(maxDeliveryTime) || isNaN(maxDeliveryDistance)) {
                 alert('Widget configuration is incomplete or invalid.');
                 return;
             }
@@ -80,48 +82,76 @@
                     var origin = new google.maps.LatLng(originLat, originLng);
                     var destination = new google.maps.LatLng(destLat, destLng);
 
-                    var service = new google.maps.DistanceMatrixService();
+                    var directionsService = new google.maps.DirectionsService();
 
-                    // Set the departure time to 5:30 PM EST on the same day
-                    var now = new Date();
-                    now.setHours(17, 30, 0, 0); // 5:30 PM
+                    // Dates for Wednesday and Saturday at 5:30 PM
+                    var today = new Date(2024, 11, 1); // December 1, 2024 (months are 0-indexed)
+                    var wednesday = new Date(today);
+                    wednesday.setDate(today.getDate() + ((3 - today.getDay() + 7) % 7)); // 3 = Wednesday
+                    wednesday.setHours(17, 30, 0, 0); // 5:30 PM
 
-                    service.getDistanceMatrix({
-                        origins: [origin],
-                        destinations: [destination],
-                        travelMode: 'DRIVING',
-                        drivingOptions: {
-                            departureTime: now, // Accepts a Date object
-                            trafficModel: 'best_guess'
-                        }
-                    }, function(response, status) {
-                        if (status !== 'OK') {
-                            alert('Error: ' + status);
+                    var saturday = new Date(today);
+                    saturday.setDate(today.getDate() + ((6 - today.getDay() + 7) % 7)); // 6 = Saturday
+                    saturday.setHours(17, 30, 0, 0); // 5:30 PM
+
+                    var durations = [];
+
+                    // Function to get duration for a specific date
+                    function getDuration(departureTime, callback) {
+                        directionsService.route({
+                            origin: origin,
+                            destination: destination,
+                            travelMode: 'DRIVING',
+                            drivingOptions: {
+                                departureTime: departureTime,
+                                trafficModel: 'bestguess'
+                            }
+                        }, function(response, status) {
+                            if (status === 'OK') {
+                                var route = response.routes[0];
+                                var leg = route.legs[0];
+                                var durationInSeconds = leg.duration_in_traffic.value;
+                                callback(null, durationInSeconds);
+                            } else {
+                                callback(status, null);
+                            }
+                        });
+                    }
+
+                    // Get durations for both days
+                    getDuration(wednesday, function(err, durationWed) {
+                        if (err) {
+                            alert('Error calculating duration for Wednesday: ' + err);
                             return;
                         }
 
-                        var results = response.rows[0].elements[0];
-                        if (results.status !== 'OK') {
-                            alert('Distance calculation failed: ' + results.status);
-                            return;
-                        }
+                        getDuration(saturday, function(err, durationSat) {
+                            if (err) {
+                                alert('Error calculating duration for Saturday: ' + err);
+                                return;
+                            }
 
-                        var distanceInKm = results.distance.value / 1000;
-                        var durationInHours = results.duration_in_traffic.value / 3600;
+                            // Calculate average duration
+                            var avgDurationInSeconds = (durationWed + durationSat) / 2;
+                            var avgDurationInHours = avgDurationInSeconds / 3600;
 
-                        // Check max constraints
-                        if (distanceInKm > maxDeliveryDistance || durationInHours > maxDeliveryTime) {
-                            document.getElementById('delivery-cost').innerHTML = 'Delivery Status: Out_of_Zone';
-                            return;
-                        }
+                            // Get distance from one of the legs (distance should be the same for both days)
+                            var distanceInKm = leg.distance.value / 1000;
 
-                        // Calculate cost
-                        var costDistance = distanceInKm * costPerKm;
-                        var costTime = durationInHours * costPerTime;
-                        deliveryCost = costDistance + costTime;
+                            // Check max constraints
+                            if (distanceInKm > maxDeliveryDistance || avgDurationInHours > maxDeliveryTime) {
+                                document.getElementById('delivery-cost').innerHTML = 'Delivery Status: Out_of_Zone';
+                                return;
+                            }
 
-                        // Display delivery cost
-                        document.getElementById('delivery-cost').innerHTML = 'Delivery Cost: $' + deliveryCost.toFixed(2);
+                            // Calculate cost
+                            var costDistance = distanceInKm * costPerKm;
+                            var costTime = avgDurationInHours * costPerTime;
+                            deliveryCost = costDistance + costTime;
+
+                            // Display delivery cost
+                            document.getElementById('delivery-cost').innerHTML = 'Delivery Cost: $' + deliveryCost.toFixed(2);
+                        });
                     });
                 }
 
