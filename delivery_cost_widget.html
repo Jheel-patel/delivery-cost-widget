@@ -6,6 +6,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/2.3.0/luxon.min.js"></script>
     <script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
     <style>
+        /* Your existing styles */
         #widget-container {
             font-family: Arial, sans-serif;
             padding: 10px;
@@ -177,7 +178,7 @@
                             // Check max constraints
                             if (distanceInKm > maxDeliveryDistance || avgDurationInHours > maxDeliveryTime) {
                                 document.getElementById('delivery-cost').innerHTML = 'Delivery Status: Out of Zone';
-                                deliveryCost = 1000; // Set deliveryCost to 0 if out of zone
+                                deliveryCost = 0; // Set deliveryCost to 0 if out of zone
                                 return;
                             }
 
@@ -194,7 +195,7 @@
 
                 // Subscribe to form submit event
                 JFCustomWidget.subscribe("submit", function() {
-                    var outputValue = deliveryCost > 0 ? Number(deliveryCost.toFixed(2)) : 1000;
+                    var outputValue = deliveryCost > 0 ? deliveryCost.toFixed(2) : "1000"; // Ensure the value is a string
                     var msg = {
                         valid: true,
                         value: outputValue
