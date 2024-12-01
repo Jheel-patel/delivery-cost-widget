@@ -34,97 +34,105 @@
     <script>
         // Wait for the widget to be ready
         JFCustomWidget.subscribe("ready", function() {
-            // Retrieve the API key securely
-            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey');
+            // Retrieve the encrypted API key from widget settings
+            var encryptedApiKey = JFCustomWidget.getWidgetSetting('googleApiKey');
 
-            // Hardcoded parameters
-            var costPerKm = 0.2; // Cost per kilometer
-            var costPerTime = 10; // Cost per hour
-            var originLat = 43.67571613019142; // Origin latitude
-            var originLng = -79.50057429622511; // Origin longitude
-
-            // Validate the API key
-            if (!googleApiKey) {
-                alert('Google Maps API Key is missing.');
+            // Validate the presence of the encrypted API key
+            if (!encryptedApiKey) {
+                alert('Encrypted Google Maps API Key is missing.');
                 return;
             }
 
-            // Load Google Maps JavaScript API dynamically
-            var script = document.createElement('script');
-            script.src = 'https://maps.googleapis.com/maps/api/js?key=' + googleApiKey + '&libraries=places';
-            document.head.appendChild(script);
-
-            script.onload = function() {
-                // Initialize the widget after Google Maps API is loaded
-                initializeWidget();
-            };
-
-            function initializeWidget() {
-                var addressInput = document.getElementById('address-input');
-                var autocomplete = new google.maps.places.Autocomplete(addressInput);
-
-                // Store the calculated delivery cost
-                var deliveryCost = 0;
-
-                autocomplete.addListener('place_changed', function() {
-                    var place = autocomplete.getPlace();
-                    if (!place.geometry) {
-                        // User did not select a prediction; reset the input field
-                        addressInput.value = '';
-                        alert('Please select an address from the suggestions.');
-                        return;
-                    }
-
-                    var destinationLat = place.geometry.location.lat();
-                    var destinationLng = place.geometry.location.lng();
-
-                    calculateDistanceAndCost(originLat, originLng, destinationLat, destinationLng);
-                });
-
-                function calculateDistanceAndCost(originLat, originLng, destLat, destLng) {
-                    var origin = new google.maps.LatLng(originLat, originLng);
-                    var destination = new google.maps.LatLng(destLat, destLng);
-
-                    var service = new google.maps.DistanceMatrixService();
-                    service.getDistanceMatrix({
-                        origins: [origin],
-                        destinations: [destination],
-                        travelMode: 'DRIVING',
-                    }, function(response, status) {
-                        if (status !== 'OK') {
-                            alert('Error: ' + status);
-                        } else {
-                            var results = response.rows[0].elements[0];
-                            if (results.status === 'OK') {
-                                var distanceInMeters = results.distance.value;
-                                var durationInSeconds = results.duration.value;
-
-                                var distanceInKm = distanceInMeters / 1000;
-                                var durationInHours = durationInSeconds / 3600;
-
-                                var costDistance = distanceInKm * costPerKm;
-                                var costTime = durationInHours * costPerTime;
-
-                                deliveryCost = costDistance + costTime;
-
-                                // Display the delivery cost
-                                document.getElementById('delivery-cost').innerHTML = 'Delivery Cost: $' + deliveryCost.toFixed(2);
-                            } else {
-                                alert('Distance request failed due to ' + results.status);
-                            }
-                        }
-                    });
+            // Decrypt the API key before using it
+            JFCustomWidget.decryptValue(encryptedApiKey, function(decryptedApiKey) {
+                if (!decryptedApiKey) {
+                    alert('Failed to decrypt the API Key. Please check your configuration.');
+                    return;
                 }
 
-                // Subscribe to form submit event
-                JFCustomWidget.subscribe("submit", function() {
-                    var msg = {
-                        valid: true,
-                        value: deliveryCost.toFixed(2)
-                    };
-                    JFCustomWidget.sendSubmit(msg);
-                });
-            }
+                // Hardcoded parameters
+                var costPerKm = 0.2; // Cost per kilometer
+                var costPerTime = 10; // Cost per hour
+                var originLat = 43.67571613019142; // Origin latitude
+                var originLng = -79.50057429622511; // Origin longitude
+
+                // Load Google Maps JavaScript API dynamically
+                var script = document.createElement('script');
+                script.src = 'https://maps.googleapis.com/maps/api/js?key=' + decryptedApiKey + '&libraries=places';
+                document.head.appendChild(script);
+
+                script.onload = function() {
+                    // Initialize the widget after Google Maps API is loaded
+                    initializeWidget();
+                };
+
+                function initializeWidget() {
+                    var addressInput = document.getElementById('address-input');
+                    var autocomplete = new google.maps.places.Autocomplete(addressInput);
+
+                    // Store the calculated delivery cost
+                    var deliveryCost = 0;
+
+                    autocomplete.addListener('place_changed', function() {
+                        var place = autocomplete.getPlace();
+                        if (!place.geometry) {
+                            // User did not select a prediction; reset the input field
+                            addressInput.value = '';
+                            alert('Please select an address from the suggestions.');
+                            return;
+                        }
+
+                        var destinationLat = place.geometry.location.lat();
+                        var destinationLng = place.geometry.location.lng();
+
+                        calculateDistanceAndCost(originLat, originLng, destinationLat, destinationLng);
+                    });
+
+                    function calculateDistanceAndCost(originLat, originLng, destLat, destLng) {
+                        var origin = new google.maps.LatLng(originLat, originLng);
+                        var destination = new google.maps.LatLng(destLat, destLng);
+
+                        var service = new google.maps.DistanceMatrixService();
+                        service.getDistanceMatrix({
+                            origins: [origin],
+                            destinations: [destination],
+                            travelMode: 'DRIVING',
+                        }, function(response, status) {
+                            if (status !== 'OK') {
+                                alert('Error: ' + status);
+                            } else {
+                                var results = response.rows[0].elements[0];
+                                if (results.status === 'OK') {
+                                    var distanceInMeters = results.distance.value;
+                                    var durationInSeconds = results.duration.value;
+
+                                    var distanceInKm = distanceInMeters / 1000;
+                                    var durationInHours = durationInSeconds / 3600;
+
+                                    var costDistance = distanceInKm * costPerKm;
+                                    var costTime = durationInHours * costPerTime;
+
+                                    deliveryCost = costDistance + costTime;
+
+                                    // Display the delivery cost
+                                    document.getElementById('delivery-cost').innerHTML = 'Delivery Cost: $' + deliveryCost.toFixed(2);
+                                } else {
+                                    alert('Distance request failed due to ' + results.status);
+                                }
+                            }
+                        });
+                    }
+
+                    // Subscribe to form submit event
+                    JFCustomWidget.subscribe("submit", function() {
+                        var msg = {
+                            valid: true,
+                            value: deliveryCost.toFixed(2)
+                        };
+                        JFCustomWidget.sendSubmit(msg);
+                    });
+                }
+            });
         });
     </script>
 </body>
