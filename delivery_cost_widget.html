@@ -34,24 +34,25 @@
     <script>
         JFCustomWidget.subscribe("ready", function() {
             // Retrieve parameters
-            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey'); // API Key (text field)
+            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey'); // API Key
             var costPerKm = parseFloat(JFCustomWidget.getWidgetSetting('costPerKm'));
             var costPerTime = parseFloat(JFCustomWidget.getWidgetSetting('costPerTime'));
             var originLat = parseFloat(JFCustomWidget.getWidgetSetting('originLat'));
             var originLng = parseFloat(JFCustomWidget.getWidgetSetting('originLng'));
-            var maxDeliveryTime = parseFloat(JFCustomWidget.getWidgetSetting('maxDeliveryTime')); // Max delivery time in hours
-            var maxDeliveryDistance = parseFloat(JFCustomWidget.getWidgetSetting('maxDeliveryDistance')); // Max delivery distance in km
+            var maxDeliveryTime = parseFloat(JFCustomWidget.getWidgetSetting('maxDeliveryTime'));
+            var maxDeliveryDistance = parseFloat(JFCustomWidget.getWidgetSetting('maxDeliveryDistance'));
+            var deliveryTimeSlotField = JFCustomWidget.getWidgetSetting('deliveryTimeSlotField'); // Field name for delivery time slot
 
             // Validate parameters
-            if (!googleApiKey || isNaN(costPerKm) || isNaN(costPerTime) || isNaN(originLat) || isNaN(originLng) || isNaN(maxDeliveryTime) || isNaN(maxDeliveryDistance)) {
+            if (!googleApiKey || isNaN(costPerKm) || isNaN(costPerTime) || isNaN(originLat) || isNaN(originLng) || isNaN(maxDeliveryTime) || isNaN(maxDeliveryDistance) || !deliveryTimeSlotField) {
                 alert('Widget configuration is incomplete or invalid.');
                 return;
             }
 
-            // Retrieve the delivery time slot dynamically from another widget
+            // Retrieve the delivery time slot dynamically
             var timeSlot = ''; // Placeholder for delivery time slot
             JFCustomWidget.getInput(function(inputs) {
-                timeSlot = inputs.deliveryTimeSlot || ''; // 'deliveryTimeSlot' is the field name of the other widget
+                timeSlot = inputs[deliveryTimeSlotField] || ''; // Fetch the field input dynamically
             });
 
             // Load Google Maps API
@@ -103,43 +104,4 @@
                             return;
                         }
 
-                        var distanceInKm = results.distance.value / 1000;
-                        var durationInHours = results.duration.value / 3600;
-
-                        // Check max constraints
-                        if (distanceInKm > maxDeliveryDistance || durationInHours > maxDeliveryTime) {
-                            document.getElementById('delivery-cost').innerHTML = 'Delivery Status: Out_of_Zone';
-                            return;
-                        }
-
-                        // Validate delivery timeslot
-                        var currentTime = new Date();
-                        var deliveryTime = new Date(timeslot);
-
-                        if (isNaN(deliveryTime.getTime()) || deliveryTime < currentTime) {
-                            alert('Invalid delivery timeslot. Please provide a valid future date and time.');
-                            return;
-                        }
-
-                        // Calculate cost
-                        var costDistance = distanceInKm * costPerKm;
-                        var costTime = durationInHours * costPerTime;
-                        deliveryCost = costDistance + costTime;
-
-                        // Display delivery cost
-                        document.getElementById('delivery-cost').innerHTML = 'Delivery Cost: $' + deliveryCost.toFixed(2);
-                    });
-                }
-
-                JFCustomWidget.subscribe("submit", function() {
-                    var msg = {
-                        valid: true,
-                        value: deliveryCost > 0 ? deliveryCost.toFixed(2) : 'Out_of_Zone'
-                    };
-                    JFCustomWidget.sendSubmit(msg);
-                });
-            }
-        });
-    </script>
-</body>
-</html>
+                        var distan
