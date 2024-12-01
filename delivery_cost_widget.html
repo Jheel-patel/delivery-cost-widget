@@ -94,9 +94,7 @@
                     saturday.setDate(today.getDate() + ((6 - today.getDay() + 7) % 7)); // 6 = Saturday
                     saturday.setHours(17, 30, 0, 0); // 5:30 PM
 
-                    var durations = [];
-
-                    // Function to get duration for a specific date
+                    // Function to get duration and distance for a specific date
                     function getDuration(departureTime, callback) {
                         directionsService.route({
                             origin: origin,
@@ -111,7 +109,8 @@
                                 var route = response.routes[0];
                                 var leg = route.legs[0];
                                 var durationInSeconds = leg.duration_in_traffic.value;
-                                callback(null, durationInSeconds);
+                                var distanceInMeters = leg.distance.value;
+                                callback(null, { duration: durationInSeconds, distance: distanceInMeters });
                             } else {
                                 callback(status, null);
                             }
@@ -119,24 +118,24 @@
                     }
 
                     // Get durations for both days
-                    getDuration(wednesday, function(err, durationWed) {
+                    getDuration(wednesday, function(err, resultWed) {
                         if (err) {
                             alert('Error calculating duration for Wednesday: ' + err);
                             return;
                         }
 
-                        getDuration(saturday, function(err, durationSat) {
+                        getDuration(saturday, function(err, resultSat) {
                             if (err) {
                                 alert('Error calculating duration for Saturday: ' + err);
                                 return;
                             }
 
                             // Calculate average duration
-                            var avgDurationInSeconds = (durationWed + durationSat) / 2;
+                            var avgDurationInSeconds = (resultWed.duration + resultSat.duration) / 2;
                             var avgDurationInHours = avgDurationInSeconds / 3600;
 
-                            // Get distance from one of the legs (distance should be the same for both days)
-                            var distanceInKm = leg.distance.value / 1000;
+                            // Get distance (should be the same for both days)
+                            var distanceInKm = resultWed.distance / 1000;
 
                             // Check max constraints
                             if (distanceInKm > maxDeliveryDistance || avgDurationInHours > maxDeliveryTime) {
