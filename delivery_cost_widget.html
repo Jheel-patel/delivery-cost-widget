@@ -4,25 +4,7 @@
     <title>Delivery Cost Calculator</title>
     <script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
     <style>
-        #widget-container {
-            font-family: Arial, sans-serif;
-            padding: 10px;
-            max-width: 400px;
-            margin: auto;
-        }
-        #delivery-cost {
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        #address-input {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            box-sizing: border-box;
-        }
-        label {
-            font-weight: bold;
-        }
+        /* ... (Your existing styles) ... */
     </style>
 </head>
 <body>
@@ -50,7 +32,7 @@
 
             // Load Google Maps API
             var script = document.createElement('script');
-            script.src = 'https://maps.googleapis.com/maps/api/js?key=' + googleApiKey + '&libraries=places';
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(googleApiKey) + '&libraries=places';
             document.head.appendChild(script);
 
             script.onload = function() {
@@ -84,13 +66,16 @@
 
                     // Set the departure time to 5:30 PM EST on the same day
                     var now = new Date();
-                    now.setHours(17, 30, 0, 0); // 5:30 PM local time
+                    now.setHours(17, 30, 0, 0); // 5:30 PM
 
                     service.getDistanceMatrix({
                         origins: [origin],
                         destinations: [destination],
                         travelMode: 'DRIVING',
-                        departure_time: now.getTime() / 1000 // Convert to UNIX timestamp
+                        drivingOptions: {
+                            departureTime: now, // Accepts a Date object
+                            trafficModel: 'best_guess'
+                        }
                     }, function(response, status) {
                         if (status !== 'OK') {
                             alert('Error: ' + status);
@@ -104,7 +89,7 @@
                         }
 
                         var distanceInKm = results.distance.value / 1000;
-                        var durationInHours = results.duration.value / 3600;
+                        var durationInHours = results.duration_in_traffic.value / 3600;
 
                         // Check max constraints
                         if (distanceInKm > maxDeliveryDistance || durationInHours > maxDeliveryTime) {
