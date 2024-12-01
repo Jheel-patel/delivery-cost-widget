@@ -11,55 +11,75 @@
     .container {
       margin: 10px;
     }
-    .key-value-list {
-      margin-top: 10px;
+    .key-value-pair {
+      margin: 5px 0;
     }
-    .key-value-item {
-      margin-bottom: 5px;
+    .key, .value {
+      display: inline-block;
+      margin-right: 10px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h3>Key-Value Pair Widget</h3>
-    <p id="status">Waiting for input from Test5...</p>
-    <div class="key-value-list" id="keyValueList"></div>
+    <p id="status">Waiting for input from source fields...</p>
+    <div id="keyValuePairs"></div>
   </div>
 
   <script>
     (function() {
-      // Listen for the widget to be ready
+      // An object to hold key-value pairs
+      const keyValuePairs = {};
+
+      // Listen for widget readiness
       JFCustomWidget.subscribe("ready", function() {
-        document.getElementById('status').textContent = 'Listening for input from Test5...';
+        document.getElementById('status').textContent = 'Widget ready. Listening for source field inputs...';
       });
 
-      // Listen for input from Jotform fields
+      // Listen for input updates from source fields
       JFCustomWidget.subscribe("input", function(data) {
-        if (data.field === "Test5") { // Match the input field name
-          const keyValueList = document.getElementById("keyValueList");
-          keyValueList.innerHTML = ""; // Clear the current list
+        const keyValueContainer = document.getElementById("keyValuePairs");
 
-          // Assume the input is a JSON object
-          try {
-            const keyValuePairs = JSON.parse(data.value);
-            for (const [key, value] of Object.entries(keyValuePairs)) {
-              const listItem = document.createElement("div");
-              listItem.className = "key-value-item";
-              listItem.textContent = `${key}: ${value}`;
-              keyValueList.appendChild(listItem);
-            }
-            document.getElementById('status').textContent = 'Displaying data from Test5.';
-          } catch (error) {
-            document.getElementById('status').textContent = 'Invalid input format for Test5. Please use JSON.';
+        // Clear existing key-value pairs in the widget display
+        keyValueContainer.innerHTML = '';
+
+        // Assume data.value is in JSON format like {"key1": "value1", "key2": "value2"}
+        try {
+          const inputData = JSON.parse(data.value);
+
+          // Update keyValuePairs object
+          Object.assign(keyValuePairs, inputData);
+
+          // Render key-value pairs in the widget
+          for (const [key, value] of Object.entries(keyValuePairs)) {
+            const pairDiv = document.createElement("div");
+            pairDiv.className = "key-value-pair";
+
+            const keyDiv = document.createElement("span");
+            keyDiv.className = "key";
+            keyDiv.textContent = `Key: ${key}`;
+
+            const valueDiv = document.createElement("span");
+            valueDiv.className = "value";
+            valueDiv.textContent = `Value: ${value}`;
+
+            pairDiv.appendChild(keyDiv);
+            pairDiv.appendChild(valueDiv);
+            keyValueContainer.appendChild(pairDiv);
           }
+
+          document.getElementById('status').textContent = 'Key-value pairs updated.';
+        } catch (error) {
+          document.getElementById('status').textContent = 'Invalid data received. Ensure JSON format.';
         }
       });
 
-      // Optionally, handle submission back to the form
+      // Send data back to the form when submitting
       JFCustomWidget.subscribe("submit", function() {
         JFCustomWidget.sendSubmit({
           valid: true,
-          value: "Data displayed successfully."
+          value: JSON.stringify(keyValuePairs),
         });
       });
     })();
