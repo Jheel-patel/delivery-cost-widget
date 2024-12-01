@@ -84,13 +84,13 @@
 
                     // Set the departure time to 5:30 PM EST on the same day
                     var now = new Date();
-                    now.setHours(17, 30, 0, 0); // Set time to 5:30 PM
+                    now.setHours(17, 30, 0, 0); // 5:30 PM local time
 
                     service.getDistanceMatrix({
                         origins: [origin],
                         destinations: [destination],
                         travelMode: 'DRIVING',
-                        departure_time: now
+                        departure_time: now.getTime() / 1000 // Convert to UNIX timestamp
                     }, function(response, status) {
                         if (status !== 'OK') {
                             alert('Error: ' + status);
