@@ -33,17 +33,17 @@
     </div>
     <script>
         // Wait for the widget to be ready
-        JFCustomWidget.subscribe("ready", function(){
-            // Get widget settings
-            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey'); // Securely get the API key
+        JFCustomWidget.subscribe("ready", function() {
+            // Retrieve the API key securely
+            var googleApiKey = JFCustomWidget.getAPIKey(); 
 
-            // Retrieve parameters as strings
+            // Retrieve widget settings
             var costPerKmStr = JFCustomWidget.getWidgetSetting('costPerKm');
             var costPerTimeStr = JFCustomWidget.getWidgetSetting('costPerTime');
             var originLatStr = JFCustomWidget.getWidgetSetting('originLat');
             var originLngStr = JFCustomWidget.getWidgetSetting('originLng');
 
-            // Parse strings to numbers
+            // Parse settings into numbers
             var costPerKm = parseFloat(costPerKmStr);
             var costPerTime = parseFloat(costPerTimeStr);
             var originLat = parseFloat(originLatStr);
@@ -127,7 +127,7 @@
                 }
 
                 // Subscribe to form submit event
-                JFCustomWidget.subscribe("submit", function(){
+                JFCustomWidget.subscribe("submit", function() {
                     var msg = {
                         valid: true,
                         value: deliveryCost.toFixed(2)
