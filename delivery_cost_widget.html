@@ -32,14 +32,18 @@
     <script>
         JFCustomWidget.subscribe("ready", function(){
             // Get widget settings
-            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey');
+            var googleApiKey = JFCustomWidget.getAPIKey(); // Updated to use getAPIKey()
             var costPerKm = parseFloat(JFCustomWidget.getWidgetSetting('costPerKm'));
             var costPerTime = parseFloat(JFCustomWidget.getWidgetSetting('costPerTime'));
             var originLat = parseFloat(JFCustomWidget.getWidgetSetting('originLat'));
             var originLng = parseFloat(JFCustomWidget.getWidgetSetting('originLng'));
 
             // Validate settings
-            if (!googleApiKey || isNaN(costPerKm) || isNaN(costPerTime) || isNaN(originLat) || isNaN(originLng)) {
+            if (!googleApiKey) {
+                alert('Google Maps API Key is missing.');
+                return;
+            }
+            if (isNaN(costPerKm) || isNaN(costPerTime) || isNaN(originLat) || isNaN(originLng)) {
                 alert('Widget configuration is incomplete or invalid.');
                 return;
             }
