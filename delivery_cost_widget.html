@@ -7,6 +7,8 @@
         #widget-container {
             font-family: Arial, sans-serif;
             padding: 10px;
+            max-width: 400px;
+            margin: auto;
         }
         #delivery-cost {
             font-weight: bold;
@@ -30,13 +32,22 @@
         <div id="delivery-cost"></div>
     </div>
     <script>
+        // Wait for the widget to be ready
         JFCustomWidget.subscribe("ready", function(){
             // Get widget settings
-            var googleApiKey = JFCustomWidget.getAPIKey(); // Updated to use getAPIKey()
-            var costPerKm = parseFloat(JFCustomWidget.getWidgetSetting('costPerKm'));
-            var costPerTime = parseFloat(JFCustomWidget.getWidgetSetting('costPerTime'));
-            var originLat = parseFloat(JFCustomWidget.getWidgetSetting('originLat'));
-            var originLng = parseFloat(JFCustomWidget.getWidgetSetting('originLng'));
+            var googleApiKey = JFCustomWidget.getAPIKey(); // Securely get the API key
+
+            // Retrieve parameters as strings
+            var costPerKmStr = JFCustomWidget.getWidgetSetting('costPerKm');
+            var costPerTimeStr = JFCustomWidget.getWidgetSetting('costPerTime');
+            var originLatStr = JFCustomWidget.getWidgetSetting('originLat');
+            var originLngStr = JFCustomWidget.getWidgetSetting('originLng');
+
+            // Parse strings to numbers
+            var costPerKm = parseFloat(costPerKmStr);
+            var costPerTime = parseFloat(costPerTimeStr);
+            var originLat = parseFloat(originLatStr);
+            var originLng = parseFloat(originLngStr);
 
             // Validate settings
             if (!googleApiKey) {
