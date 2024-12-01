@@ -35,7 +35,7 @@
         // Wait for the widget to be ready
         JFCustomWidget.subscribe("ready", function(){
             // Get widget settings
-            var googleApiKey = JFCustomWidget.getAPIKey(); // Securely get the API key
+            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey'); // Securely get the API key
 
             // Retrieve parameters as strings
             var costPerKmStr = JFCustomWidget.getWidgetSetting('costPerKm');
