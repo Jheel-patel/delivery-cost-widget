@@ -1,107 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Delivery Cost Calculator</title>
-    <script src="//js.jotform.com/JotFormCustomWidget.min.js"></script>
-    <style>
-        #widget-container {
-            font-family: Arial, sans-serif;
-            padding: 10px;
-            max-width: 400px;
-            margin: auto;
-        }
-        #delivery-cost {
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        #address-input {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            box-sizing: border-box;
-        }
-        label {
-            font-weight: bold;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Key-Value Pair Widget</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      margin: 10px;
+    }
+    .key-value-list {
+      margin-top: 10px;
+    }
+    .key-value-item {
+      margin-bottom: 5px;
+    }
+  </style>
 </head>
 <body>
-    <div id="widget-container">
-        <label for="address-input">Enter your address:</label><br>
-        <input type="text" id="address-input" placeholder="Start typing your address..."><br>
-        <div id="delivery-cost"></div>
-    </div>
-    <script>
-        JFCustomWidget.subscribe("ready", function() {
-            // Retrieve parameters
-            var googleApiKey = JFCustomWidget.getWidgetSetting('googleApiKey'); // API Key
-            var costPerKm = parseFloat(JFCustomWidget.getWidgetSetting('costPerKm'));
-            var costPerTime = parseFloat(JFCustomWidget.getWidgetSetting('costPerTime'));
-            var originLat = parseFloat(JFCustomWidget.getWidgetSetting('originLat'));
-            var originLng = parseFloat(JFCustomWidget.getWidgetSetting('originLng'));
-            var maxDeliveryTime = parseFloat(JFCustomWidget.getWidgetSetting('maxDeliveryTime'));
-            var maxDeliveryDistance = parseFloat(JFCustomWidget.getWidgetSetting('maxDeliveryDistance'));
-            var deliveryTimeSlotField = JFCustomWidget.getWidgetSetting('deliveryTimeSlotField'); // Field name for delivery time slot
+  <div class="container">
+    <h3>Key-Value Pair Widget</h3>
+    <p id="status">Waiting for input from Test5...</p>
+    <div class="key-value-list" id="keyValueList"></div>
+  </div>
 
-            // Validate parameters
-            if (!googleApiKey || isNaN(costPerKm) || isNaN(costPerTime) || isNaN(originLat) || isNaN(originLng) || isNaN(maxDeliveryTime) || isNaN(maxDeliveryDistance) || !deliveryTimeSlotField) {
-                alert('Widget configuration is incomplete or invalid.');
-                return;
+  <script>
+    (function() {
+      // Listen for the widget to be ready
+      JFCustomWidget.subscribe("ready", function() {
+        document.getElementById('status').textContent = 'Listening for input from Test5...';
+      });
+
+      // Listen for input from Jotform fields
+      JFCustomWidget.subscribe("input", function(data) {
+        if (data.field === "Test5") { // Match the input field name
+          const keyValueList = document.getElementById("keyValueList");
+          keyValueList.innerHTML = ""; // Clear the current list
+
+          // Assume the input is a JSON object
+          try {
+            const keyValuePairs = JSON.parse(data.value);
+            for (const [key, value] of Object.entries(keyValuePairs)) {
+              const listItem = document.createElement("div");
+              listItem.className = "key-value-item";
+              listItem.textContent = `${key}: ${value}`;
+              keyValueList.appendChild(listItem);
             }
+            document.getElementById('status').textContent = 'Displaying data from Test5.';
+          } catch (error) {
+            document.getElementById('status').textContent = 'Invalid input format for Test5. Please use JSON.';
+          }
+        }
+      });
 
-            // Retrieve the delivery time slot dynamically
-            var timeSlot = ''; // Placeholder for delivery time slot
-            JFCustomWidget.getInput(function(inputs) {
-                timeSlot = inputs[deliveryTimeSlotField] || ''; // Fetch the field input dynamically
-            });
-
-            // Load Google Maps API
-            var script = document.createElement('script');
-            script.src = 'https://maps.googleapis.com/maps/api/js?key=' + googleApiKey + '&libraries=places';
-            document.head.appendChild(script);
-
-            script.onload = function() {
-                initializeWidget();
-            };
-
-            function initializeWidget() {
-                var addressInput = document.getElementById('address-input');
-                var autocomplete = new google.maps.places.Autocomplete(addressInput);
-                var deliveryCost = 0;
-
-                autocomplete.addListener('place_changed', function() {
-                    var place = autocomplete.getPlace();
-                    if (!place.geometry) {
-                        addressInput.value = '';
-                        alert('Please select an address from the suggestions.');
-                        return;
-                    }
-
-                    var destinationLat = place.geometry.location.lat();
-                    var destinationLng = place.geometry.location.lng();
-
-                    calculateDeliveryCost(originLat, originLng, destinationLat, destinationLng, timeSlot);
-                });
-
-                function calculateDeliveryCost(originLat, originLng, destLat, destLng, timeslot) {
-                    var origin = new google.maps.LatLng(originLat, originLng);
-                    var destination = new google.maps.LatLng(destLat, destLng);
-
-                    var service = new google.maps.DistanceMatrixService();
-                    service.getDistanceMatrix({
-                        origins: [origin],
-                        destinations: [destination],
-                        travelMode: 'DRIVING',
-                    }, function(response, status) {
-                        if (status !== 'OK') {
-                            alert('Error: ' + status);
-                            return;
-                        }
-
-                        var results = response.rows[0].elements[0];
-                        if (results.status !== 'OK') {
-                            alert('Distance calculation failed: ' + results.status);
-                            return;
-                        }
-
-                        var distan
+      // Optionally, handle submission back to the form
+      JFCustomWidget.subscribe("submit", function() {
+        JFCustomWidget.sendSubmit({
+          valid: true,
+          value: "Data displayed successfully."
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
